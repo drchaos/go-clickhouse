@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"bytes"
+	"fmt"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -63,7 +64,12 @@ func (t HttpTransport) Exec(conn *Conn, q Query, readOnly bool) (res string, err
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(resp.Body)
 
-	return buf.String(), err
+    if resp.StatusCode == 200 {
+        return buf.String(), err
+    } else {
+		err = fmt.Errorf("Clickhouse host response was '%s'", buf.String())
+        return "", err
+    }
 }
 
 func prepareExecPostRequest(conn *Conn, q Query) (*http.Request, error) {
