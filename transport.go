@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"bytes"
+    "crypto/tls"
 	"fmt"
 	"mime/multipart"
 	"net/http"
@@ -20,12 +21,20 @@ type Transport interface {
 
 type HttpTransport struct {
 	Timeout time.Duration
+    Insecure bool
 }
 
 func (t HttpTransport) Exec(conn *Conn, q Query, readOnly bool) (res string, err error) {
 	var resp *http.Response
 	query := prepareHttp(q.Stmt, q.args)
-	client := &http.Client{Timeout: t.Timeout}
+	tlsConfig := tls.Config{}
+	if t.Insecure {
+		tlsConfig.InsecureSkipVerify = true
+	}
+	client := &http.Client{
+        Transport: &http.Transport{ TLSClientConfig:   &tlsConfig },
+	    Timeout: t.Timeout,
+    }
 
 	if readOnly {
 		if len(query) > 0 {
